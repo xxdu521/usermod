@@ -1,8 +1,10 @@
-package main
+package users
 
 import (
 	"fmt"
 	"strings"
+
+	. "github.com/xxdu521/usermod/users"
 )
 
 func auth() bool {
@@ -144,55 +146,9 @@ func query(users map[string]map[string]string) {
 	}
 }
 
-func main() {
-	users := make(map[string]map[string]string)
-	id := 0
-	fmt.Println("马哥用户管理系统")
-
-	if !auth() {
-		fmt.Println(".............密码错误")
-		return
-	}
-
-	for {
-		var op string
-		fmt.Print(`
-----------------
-1.add
-2.update
-3.del
-4.query
-5.exit
-
-请输入指令：`)
-
-		fmt.Scan(&op)
-		if op == "1" {
-			//fmt.Println("add")
-			id++
-			add(id, users)
-		} else if op == "2" {
-			//fmt.Println("update")
-			update(users)
-		} else if op == "3" {
-			//fmt.Println("del")
-			del(users)
-		} else if op == "4" {
-			//fmt.Println("query")
-			query(users)
-		} else if op == "5" {
-			fmt.Println("\n\n退出管理系统，下次再见！")
-			break
-		} else {
-			fmt.Printf("\n\n输入错误，请重新输入")
-		}
-	}
-}
-
 /*
 评分: 7.5
 考虑：
 1. add和update有一对堆用户信息输入，是否可以重构为一个函数
 2. 思考if else-if else如何使用switch-case替代，更深入思考利用函数类型如何简写
 */
-
