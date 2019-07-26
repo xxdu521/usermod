@@ -3,8 +3,6 @@ package users
 import (
 	"fmt"
 	"strings"
-
-	. "github.com/xxdu521/usermod/users"
 )
 
 func auth() bool {
