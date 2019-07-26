@@ -1,152 +1,276 @@
 package users
 
 import (
+	"bufio"
+	"crypto/md5"
+	"encoding/gob"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"strconv"
 	"strings"
+	"time"
+
+	"github.com/howeyc/gopass"
 )
 
-func Auth() bool {
-	var password string = "123abc!@#"
-	var count int
-	var passwd_input string
-	for {
-		//fmt.Println(count)
-		if count < 3 {
-			fmt.Print("请输入密码：")
-			fmt.Scan(&passwd_input)
-			if passwd_input == password {
-				return true
+//初始化常量变量和结构体
+const (
+	log_file    = "users.log"
+	db_file     = "users.db"
+	passwd_file = "passwd.file"
+)
+
+//用户类型的结构体
+type User struct {
+	Name     string
+	Birthday time.Time
+	Addr     string
+	//Tel      string
+	//Desc     string
+}
+
+//密码类型的结构体
+type Passwd struct {
+	Passwd string
+}
+
+var count int
+var passwd = "123abc!@#"
+
+//用户数据的结构体
+var users = map[int]User{0: User{"Admin", time.Now(), "北京"}}
+
+//系统方法3，记录日志,放在初始化里了
+func init() {
+	if file, err := os.OpenFile(log_file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, os.ModePerm); err == nil {
+		log.SetOutput(file)
+		log.SetPrefix("users:")
+		log.SetFlags(log.Flags() | log.Lshortfile)
+	} else {
+		fmt.Println(err)
+	}
+}
+
+//输出测试，编写过程中，调试用
+func Test() {
+	//fmt.Printf("users映射数据类型: %v\n", users)
+	//p.SetPasswd()
+	fmt.Println(passwd)
+	//Add()
+	//Update()
+	//Query()
+	Del()
+	//fmt.Printf("下次新增ID为: %v ", GetID())
+	//FileEncode(db_file,users)
+	//fmt.Println(users)
+}
+
+//系统方法1，认证，N为true时，跳过密码。
+func Auth(N bool) bool {
+	p := Passwd{}
+	if !p.ReaderFile() {
+		p.SetPasswd()
+	}
+
+	if N != true {
+		for {
+			if count < 3 {
+				input_passwd := fmt.Sprintf("%X", md5.Sum([]byte(Inputstring("请输入密码: "))))
+				if input_passwd == passwd {
+					return true
+				}
+				count++
+				fmt.Println("密码错误，请重试: ")
+			} else {
+				fmt.Println("尝试次数过多，退出管理系统")
+				return false
 			}
-			count++
-			fmt.Println("密码错误，请重试")
-		} else {
-			fmt.Println("尝试次数过多, 退出管理系统。")
-			return false
-		}
-	}
-}
-
-//add,update,del,query
-func Add(pk int, users map[string]map[string]string) {
-	var (
-		id   string = fmt.Sprintf("%d", pk)
-		name string
-		age  string
-		tel  string
-		addr string
-	)
-	//fmt.Println(id, name, age, tel, addr)
-	fmt.Print("请输入姓名：")
-	fmt.Scan(&name)
-	fmt.Print("请输入年龄：")
-	fmt.Scan(&age)
-	fmt.Print("请输入电话：")
-	fmt.Scan(&tel)
-	fmt.Print("请输入住址：")
-	fmt.Scan(&addr)
-
-	users[id] = map[string]string{
-		"id":   id,
-		"name": name,
-		"age":  age,
-		"tel":  tel,
-		"addr": addr,
-	}
-	fmt.Printf("\n\n用户添加成功：\n%5s|%20s|%5s|%20s|%50s", users[id]["id"], users[id]["name"], users[id]["age"], users[id]["tel"], users[id]["addr"])
-}
-
-func Del(users map[string]map[string]string) {
-	var (
-		id   string
-		exec string
-	)
-	fmt.Print("请输入要删除的用户ID [string|all]：")
-	fmt.Scan(&id)
-	if id == "all" {
-		fmt.Print("确定要清空全部数据吗(y/Y)：")
-		users = make(map[string]map[string]string)
-		fmt.Println(users)
-		fmt.Printf("\n\n已经清空全部数据。")
-
-	} else if user, ok := users[id]; ok {
-		fmt.Printf("%5s|%20s|%5s|%20s|%50s\n", user["id"], user["name"], user["age"], user["tel"], user["addr"])
-		fmt.Print("确定要删除吗(y/Y)：")
-		fmt.Scan(&exec)
-		if exec == "y" || exec == "Y" {
-			delete(users, id)
-			fmt.Printf("删除 %s 成功", users[id]["name"])
-		} else {
-			fmt.Printf("\n\n退出删除用户状态")
 		}
 	} else {
-		fmt.Printf("\n\n用户ID不存在，删除用户失败")
+		return true
 	}
 }
 
-func Update(users map[string]map[string]string) {
-	var (
-		id   string
-		name string
-		age  string
-		tel  string
-		addr string
-		exec string
-	)
+//基本方法1，输入信息
+func Inputstring(tips string) string {
+	var s string
+	fmt.Print(tips)
+	fmt.Scan(&s)
+	return strings.TrimSpace(s)
+}
 
-	fmt.Print("请输入要修改的用户ID：")
-	fmt.Scan(&id)
-	if user, ok := users[id]; ok {
-		fmt.Printf("%5s|%20s|%5s|%20s|%50s\n", user["id"], user["name"], user["age"], user["tel"], user["addr"])
-		fmt.Print("确认要修改吗(y/Y)：")
-		fmt.Scan(&exec)
-		if exec == "y" || exec == "Y" {
-			fmt.Print("请输入姓名：")
-			fmt.Scan(&name)
-			fmt.Print("请输入年龄：")
-			fmt.Scan(&age)
-			fmt.Print("请输入电话：")
-			fmt.Scan(&tel)
-			fmt.Print("请输入住址：")
-			fmt.Scan(&addr)
+//系统方法2，密码文件的md5转换存储和读取
 
-			users[id] = map[string]string{
-				"id":   id,
-				"name": name,
-				"age":  age,
-				"tel":  tel,
-				"addr": addr,
-			}
-			fmt.Println("\n\n用户信息修改成功!")
+func (p *Passwd) ReaderFile() bool {
+	if bytes, err := ioutil.ReadFile(passwd_file); err == nil {
+		passwd = string(bytes)
+		fmt.Println(passwd)
+	} else {
+		fmt.Println(err)
+		return false
+	}
+	return true
+}
 
+func (p *Passwd) WriteFile() {
+	if file, err := os.Create(passwd_file); err == nil {
+		defer file.Close()
+		writer := bufio.NewWriter(file)
+		writer.WriteString(passwd)
+		writer.Flush()
+	} else {
+		fmt.Println(err)
+	}
+}
+
+func (p *Passwd) SetPasswd() {
+	fmt.Print("请设置密码: ")
+	bytes, _ := gopass.GetPasswd()
+	fmt.Println(string(bytes))
+	first := fmt.Sprintf("%X", md5.Sum(bytes))
+
+	fmt.Print("请确认密码: ")
+	bytes, _ = gopass.GetPasswd()
+	fmt.Println(string(bytes))
+	confirm := fmt.Sprintf("%X", md5.Sum(bytes))
+
+	if first == confirm {
+		passwd = confirm
+		p.WriteFile()
+		log.Printf("设置密码成功")
+		fmt.Println("设置密码成功")
+	} else {
+		fmt.Println("两次输入的密码不一致，设置密码失败")
+	}
+}
+
+//系统方法2，排序，
+
+//系统方法4，用户数据的序列化和反序列化
+func FileEncode(db_file string, users map[int]User) {
+	if file, err := os.Create(db_file); err == nil {
+		defer file.Close()
+		writer := gob.NewEncoder(file)
+		writer.Encode(users)
+	} else {
+		fmt.Println(err)
+	}
+}
+
+func FileDecode(db_file string) map[int]User {
+	if file, err := os.Open(db_file); err == nil {
+		defer file.Close()
+		reader := gob.NewDecoder(file)
+		reader.Decode(&users)
+		return users
+	} else {
+		fmt.Println(err)
+	}
+	return nil
+}
+
+//系统方法6，欢迎菜单
+//系统方法7，获取最大ID
+func GetID() int {
+	ID := 0
+	for k, _ := range users {
+		if ID < k {
+			ID = k
+		}
+	}
+	return ID + 1
+}
+
+//用户方法1，写入用户数据
+func (user *User) SetUser() {
+	user.Name = Inputstring("请输入姓名: ")
+	user.Birthday = time.Now()
+	user.Addr = Inputstring("请输入地址: ")
+	//user.Tel = Inputstring("请输入电话: ")
+	//user.Desc = Inputstring("请输入备注信息: ")
+	//fmt.Println(user)
+}
+
+//数据方法1，增加,
+func Add() {
+	defer FileEncode(db_file, users)
+	users := FileDecode(db_file)
+	//fmt.Println(users)
+	user := User{}
+	user.SetUser()
+	ID := GetID()
+	users[ID] = user
+	log.Printf("添加用户 %v", user.Name)
+	fmt.Printf("%-5d|%-10s|%-15s|%-15s\n", ID, user.Name, user.Birthday.Format("2006/01/02"), user.Addr)
+
+}
+
+//数据方法2，修改
+func Update() {
+	defer FileEncode(db_file, users)
+	users := FileDecode(db_file)
+
+	if ID, err := strconv.Atoi(Inputstring("请输入想要修改的用户ID: ")); err == nil {
+		if user, ok := users[ID]; ok {
+			fmt.Printf("%-5d|%-10s|%-15s|%-15s\n", ID, user.Name, user.Birthday.Format("2006/01/02"), user.Addr)
+			user.SetUser()
+			users[ID] = user
+			log.Printf("更新用户 %v", user.Name)
+			fmt.Printf("%-5d|%-10s|%-15s|%-15s\n", ID, user.Name, user.Birthday.Format("2006/01/02"), user.Addr)
 		} else {
-			fmt.Println("\n\n退出更新信息状态")
+			fmt.Println("用户ID不存在.")
 		}
 	} else {
-		fmt.Println("\n\n用户ID不存在，更新信息失败")
+		fmt.Println("请输入正确的用户的ID.")
 	}
+	//fmt.Println(users)
 }
 
-func Query(users map[string]map[string]string) {
-	var q string
-	fmt.Print("请输入查询信息 [string|all] ：")
-	fmt.Scan(&q)
+//数据方法3，删除
+func Del() {
+	defer FileEncode(db_file, users)
+	users := FileDecode(db_file)
+	fmt.Println(users)
 
-	//先打印title
-	title := fmt.Sprintf("\n\n%5s|%20s|%5s|%20s|%50s", "ID", "Name", "Age", "Tel", "Addr")
-	fmt.Println(title)
-	fmt.Println(strings.Repeat("-", len(title)))
-
-	for _, user := range users {
-		if q == "all" || strings.Contains(user["name"], q) || strings.Contains(user["addr"], q) || strings.Contains(user["tel"], q) {
-			fmt.Printf("%5s|%20s|%5s|%20s|%50s\n", user["id"], user["name"], user["age"], user["tel"], user["addr"])
+	if ID, err := strconv.Atoi(Inputstring("请输入想要删除的用户ID: ")); err == nil {
+		if user, ok := users[ID]; ok {
+			fmt.Printf("%-5d|%-10s|%-15s|%-15s\n", ID, user.Name, user.Birthday.Format("2006/01/02"), user.Addr)
+			exec := Inputstring("请问你确定要删除这个用户吗？ Y/N: ")
+			if exec == "Y" || exec == "y" {
+				delete(users, ID)
+				log.Printf("删除用户 %v", user.Name)
+				fmt.Println("用户已经删除.")
+			} else {
+				fmt.Println("退出用户删除操作.")
+			}
+		} else {
+			fmt.Println("输入的用户ID不存在.")
 		}
-
+	} else {
+		fmt.Println(err)
 	}
 }
 
-/*
-评分: 7.5
-考虑：
-1. add和update有一对堆用户信息输入，是否可以重构为一个函数
-2. 思考if else-if else如何使用switch-case替代，更深入思考利用函数类型如何简写
-*/
+//数据方法4，查询
+func Query() {
+	defer FileEncode(db_file, users)
+	users := FileDecode(db_file)
+
+	q := Inputstring("请输入想要查询的内容: ")
+	if len(q) != 0 {
+		for ID, user := range users {
+			if q == "all" {
+				log.Println("查询用户 all")
+				fmt.Printf("%-5d|%-10s|%-15s|%-15s\n", ID, user.Name, user.Birthday.Format("2006/01/02"), user.Addr)
+				//fmt.Printf("%-5d|%-10s|%-15s|%-10s|%-15s|%-15s\n", user.ID, user.Name, user.Birthday.Format("2006/01/02"), user.Tel, user.Addr, user.Desc)
+			} else if strings.Contains(user.Name, q) || strings.Contains(user.Addr, q) {
+				log.Printf("查询用户 %v", user.Name)
+				fmt.Printf("%-5d|%-10s|%-15s|%-15s\n", ID, user.Name, user.Birthday.Format("2006/01/02"), user.Addr)
+			}
+		}
+	} else {
+		fmt.Println("输入的查询内容为空")
+	}
+}

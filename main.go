@@ -1,59 +1,47 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"strconv"
 
-	"github.com/howeyc/gopass"
-
-	//. "github.com/JevonWei/usermanager/auth"
-	. "github.com/xxdu521/usermod/users"
+	"github.com/xxdu521/usermod/users"
 )
 
 func main() {
-	users := make(map[string]map[string]string)
-	id := 0
-	fmt.Println("马哥用户管理系统")
 
-	if !Auth() {
-		fmt.Println(".............密码错误")
+	//认证
+	auth := flag.Bool("N", false, "no auth")
+	flag.Parse()
+	fmt.Println(*auth)
+	if !users.Auth(*auth) {
 		return
 	}
 
-	fmt.Print("请输入JevonWei用户系统密码: ")
-	bytes, _ := gopass.GetPasswd()
-	fmt.Println(bytes)
+	//功能测试
+	metu := `
+1. 新建用户
+2. 修改用户
+3. 删除用户
+4. 查询用户
+5. 退出`
+
+	callbacks := map[int]func(){
+		1: users.Add,
+		2: users.Query,
+		3: users.Del,
+		4: users.Update,
+	}
 
 	for {
-		var op string
-		fmt.Print(`
-----------------
-1.add
-2.update
-3.del
-4.query
-5.exit
+		fmt.Println(metu)
 
-请输入指令：`)
-
-		fmt.Scan(&op)
-		if op == "1" {
-			//fmt.Println("add")
-			id++
-			Add(id, users)
-		} else if op == "2" {
-			//fmt.Println("update")
-			Update(users)
-		} else if op == "3" {
-			//fmt.Println("del")
-			Del(users)
-		} else if op == "4" {
-			//fmt.Println("query")
-			Query(users)
-		} else if op == "5" {
-			fmt.Println("\n\n退出管理系统，下次再见！")
-			break
+		if callback, ok := callbacks[strconv.Atoi(Inputstring("请选择功能项: "))]; ok {
+			//if callback, ok := callbacks[strconv.Atoi(users.Inputstring("请选择功能项: "))]; ok {
+			callback()
 		} else {
-			fmt.Printf("\n\n输入错误，请重新输入")
+			print("输入错误，请重新输入!!!")
 		}
 	}
+	users.Test()
 }
