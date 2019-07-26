@@ -19,7 +19,7 @@ import (
 const (
 	log_file    = "users.log"
 	db_file     = "users.db"
-	passwd_file = "passwd.file"
+	passwd_file = ".passwd.file"
 )
 
 //用户类型的结构体
@@ -95,10 +95,10 @@ func Auth(N bool) bool {
 
 //基本方法1，输入信息
 func Inputstring(tips string) string {
-	var s string
+	var Ss string
 	fmt.Print(tips)
-	fmt.Scan(&s)
-	return strings.TrimSpace(s)
+	fmt.Scan(&Ss)
+	return strings.TrimSpace(Ss)
 }
 
 //系统方法2，密码文件的md5转换存储和读取
