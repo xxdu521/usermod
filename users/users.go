@@ -37,7 +37,7 @@ type Passwd struct {
 }
 
 var count int
-var passwd = "123abc!@#"
+var passwd string
 
 //用户数据的结构体
 var users = map[int]User{0: User{"Admin", time.Now(), "北京"}}
@@ -71,25 +71,18 @@ func Test() {
 func Auth(N bool) bool {
 	p := Passwd{}
 	if !p.ReaderFile() {
-		p.SetPasswd()
-	}
-
-	if N != true {
+		fmt.Println("请先设置您的密码，只有正确设置密码后，才可以使用该系统。")
 		for {
-			if count < 3 {
-				input_passwd := fmt.Sprintf("%X", md5.Sum([]byte(Inputstring("请输入密码: "))))
-				if input_passwd == passwd {
-					return true
-				}
-				count++
-				fmt.Println("密码错误，请重试: ")
-			} else {
-				fmt.Println("尝试次数过多，退出管理系统")
-				return false
+			if p.SetPasswd() {
+				break
 			}
 		}
-	} else {
+	}
+	//通过N判断，是否需要验证密码
+	if N == true {
 		return true
+	} else {
+		return p.CheckPasswd()
 	}
 }
 
@@ -103,12 +96,27 @@ func Inputstring(tips string) string {
 
 //系统方法2，密码文件的md5转换存储和读取
 
+func (p *Passwd) CheckPasswd() bool {
+	for {
+		if count < 3 {
+			fmt.Print("请输入系统登录密码: ")
+			bytes, _ := gopass.GetPasswd()
+			inputpasswd := fmt.Sprintf("%X", md5.Sum(bytes))
+			if inputpasswd == passwd {
+				return true
+			}
+			count++
+			fmt.Println("密码错误，请重试: ")
+		} else {
+			return false
+		}
+	}
+}
+
 func (p *Passwd) ReaderFile() bool {
 	if bytes, err := ioutil.ReadFile(passwd_file); err == nil {
 		passwd = string(bytes)
-		fmt.Println(passwd)
 	} else {
-		fmt.Println(err)
 		return false
 	}
 	return true
@@ -125,15 +133,15 @@ func (p *Passwd) WriteFile() {
 	}
 }
 
-func (p *Passwd) SetPasswd() {
+func (p *Passwd) SetPasswd() bool {
 	fmt.Print("请设置密码: ")
 	bytes, _ := gopass.GetPasswd()
-	fmt.Println(string(bytes))
+	//fmt.Println(string(bytes))
 	first := fmt.Sprintf("%X", md5.Sum(bytes))
 
 	fmt.Print("请确认密码: ")
 	bytes, _ = gopass.GetPasswd()
-	fmt.Println(string(bytes))
+	//fmt.Println(string(bytes))
 	confirm := fmt.Sprintf("%X", md5.Sum(bytes))
 
 	if first == confirm {
@@ -141,8 +149,10 @@ func (p *Passwd) SetPasswd() {
 		p.WriteFile()
 		log.Printf("设置密码成功")
 		fmt.Println("设置密码成功")
+		return true
 	} else {
 		fmt.Println("两次输入的密码不一致，设置密码失败")
+		return false
 	}
 }
 
@@ -272,5 +282,14 @@ func Query() {
 		}
 	} else {
 		fmt.Println("输入的查询内容为空")
+	}
+}
+
+func UpdatePasswd() {
+	p := Passwd{}
+	if p.CheckPasswd() {
+		p.SetPasswd()
+	} else {
+		fmt.Println("您输入的密码不正确，退出修改密码模式")
 	}
 }
